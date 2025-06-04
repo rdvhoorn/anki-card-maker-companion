@@ -1,0 +1,16 @@
+from pydantic_ai import Agent
+
+class ClueCreator:
+
+    def __init__(self):
+        self.clue_finetuning_agent = Agent(
+            'openai:gpt-4o-mini',
+            system_prompt="""
+You are a clue creator assistant.
+Given a word, check if that word is a Spanish verb conjugation. If it is, return the verb infinitive. If it is not, return nothing.
+Return only the verb infinitive, or nothing at all. 
+        """
+        )
+
+    def create_clue(self, word):
+        return self.clue_finetuning_agent.run_sync(word).output
