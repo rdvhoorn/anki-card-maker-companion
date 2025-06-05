@@ -74,12 +74,17 @@ if sentence:
                 st.session_state.blank_cards.append(card)
                 st.success(f"Added card for: '{back}'")
 
-# --- Step 5: Show all cards added in this session ---
-if st.session_state.blank_cards:
-    st.markdown("### 🧾 Cards in this session")
-    for idx, card in enumerate(st.session_state.blank_cards):
-        st.markdown(f"**{idx+1}.** {card['front']} → **{card['back']}**")
-        if card.get('clue'):
-            st.markdown(f"🔍 *Clue*: {card['clue']}")
-        if card.get('image_url'):
-            st.image(card['image_url'], width=200)
+# --- Sidebar: Show session card overview ---
+with st.sidebar:
+    st.markdown("### 🧾 Cards in session")
+    if st.session_state.blank_cards:
+        for idx, card in enumerate(st.session_state.blank_cards):
+            col1, col2 = st.columns([5, 1])
+            with col1:
+                st.markdown(f"**{idx+1}.** {card['front']} → **{card['back']}**")
+            with col2:
+                if st.button("🗑️", key=f"delete_{idx}"):
+                    st.session_state.blank_cards.pop(idx)
+                    st.rerun()
+    else:
+        st.info("No cards added yet.")
