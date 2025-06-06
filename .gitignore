@@ -195,3 +195,5 @@ cython_debug/
 
 uploaded_images/
 media/
+uploaded_audio/
+uploaded_images/

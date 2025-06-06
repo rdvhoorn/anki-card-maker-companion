@@ -4,7 +4,9 @@ import os
 import re
 import random
 from PIL import Image
+from datetime import datetime
 
+from helpers.anki_exporter import export_cards_to_apkg
 from helpers.image_searcher import ImageSearcher
 from helpers.context_creator import ContextCreator
 
@@ -16,6 +18,34 @@ UPLOAD_IMG_DIR = "uploaded_images"
 UPLOAD_AUDIO_DIR = "uploaded_audio"
 os.makedirs(UPLOAD_IMG_DIR, exist_ok=True)
 os.makedirs(UPLOAD_AUDIO_DIR, exist_ok=True)
+
+# --- Helpers ---
+def reset_card_state():
+    st.session_state.pending_blank_card = None
+    st.session_state.pending_definition_card = None
+    st.session_state.selected_image_url = None
+    st.session_state.selected_word = None
+    st.session_state.image_results = []
+
+def handle_image_selection():
+    st.markdown("### 🖼️ Select an image")
+    cols = st.columns(len(st.session_state.image_results))
+    for i, (col, url) in enumerate(zip(cols, st.session_state.image_results)):
+        with col:
+            st.image(url, use_container_width=True)
+            if st.button("Select", key=f"select_image_{i}"):
+                st.session_state.selected_image_url = url
+
+    uploaded_file = st.file_uploader("Or upload your own image", type=["png", "jpg", "jpeg"], key="upload_img")
+    if uploaded_file:
+        img_path = os.path.join(UPLOAD_IMG_DIR, f"custom_{uploaded_file.name}")
+        with open(img_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        st.session_state.selected_image_url = img_path
+
+    if st.session_state.selected_image_url:
+        st.markdown("**✅ Selected Image:**")
+        st.image(st.session_state.selected_image_url, width=150)
 
 # --- Initialize session state ---
 if 'image_searcher' not in st.session_state:
@@ -69,7 +99,6 @@ if st.session_state.selected_word is not None:
     st.markdown(f"### 📍 Options for: **{selected_word}**")
     col1, col2 = st.columns(2)
 
-    # -- Fill in the blank option
     with col1:
         if st.button("🧩 Fill in the blank"):
             front = ' '.join(['_____' if j == selected_index else w for j, w in enumerate(words)])
@@ -89,7 +118,6 @@ if st.session_state.selected_word is not None:
             }
             st.session_state.selected_image_url = None
 
-    # -- Definition option
     with col2:
         if st.button("📘 Definition"):
             base_form = st.session_state.context_creator.get_word_base_form(selected_word)
@@ -109,27 +137,6 @@ if st.session_state.selected_word is not None:
             st.session_state.selected_image_url = None
             st.session_state.definition_card_ready = False
 
-# --- Step 4: Shared image selection block ---
-def handle_image_selection():
-    st.markdown("### 🖼️ Select an image")
-    cols = st.columns(len(st.session_state.image_results))
-    for i, (col, url) in enumerate(zip(cols, st.session_state.image_results)):
-        with col:
-            st.image(url, use_container_width=True)
-            if st.button("Select", key=f"select_image_{i}"):
-                st.session_state.selected_image_url = url
-
-    uploaded_file = st.file_uploader("Or upload your own image", type=["png", "jpg", "jpeg"], key="upload_img")
-    if uploaded_file:
-        img_path = os.path.join(UPLOAD_IMG_DIR, f"custom_{uploaded_file.name}")
-        with open(img_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        st.session_state.selected_image_url = img_path
-
-    if st.session_state.selected_image_url:
-        st.markdown("**✅ Selected Image:**")
-        st.image(st.session_state.selected_image_url, width=150)
-
 # --- Fill-in-the-blank flow ---
 if st.session_state.pending_blank_card and st.session_state.image_results:
     handle_image_selection()
@@ -137,7 +144,6 @@ if st.session_state.pending_blank_card and st.session_state.image_results:
     if st.session_state.selected_image_url:
         st.session_state.pending_blank_card['image_url'] = st.session_state.selected_image_url
 
-    # Preview before adding
     st.markdown("### 🧾 Card Preview")
     st.text_input("Front", value=st.session_state.pending_blank_card['front'], key="preview_front")
     st.text_input("Back", value=st.session_state.pending_blank_card['back'], key="preview_back")
@@ -145,10 +151,7 @@ if st.session_state.pending_blank_card and st.session_state.image_results:
 
     if st.button("➕ Add Card"):
         st.session_state.cards.append(st.session_state.pending_blank_card)
-        st.session_state.pending_blank_card = None
-        st.session_state.image_results = []
-        st.session_state.selected_word = None
-        st.session_state.selected_image_url = None
+        reset_card_state()
         st.success("Card added!")
         st.rerun()
 
@@ -160,7 +163,6 @@ if st.session_state.pending_definition_card and st.session_state.image_results:
     if st.session_state.selected_image_url:
         st.session_state.pending_definition_card["image_url"] = st.session_state.selected_image_url
 
-    # Forvo helper
     st.markdown("### 🔊 Pronunciation")
     choice_base_form = random.choice(base_word.split("/")).strip() if "/" in base_word else base_word
     forvo_url = f"https://forvo.com/word/{choice_base_form}/#es"
@@ -168,7 +170,6 @@ if st.session_state.pending_definition_card and st.session_state.image_results:
 
     audio_file = st.file_uploader("Upload audio file from Forvo", type=["mp3", "ogg"], key="upload_audio")
     if audio_file:
-        # Normalize base_word for filename use
         base_word_clean = st.session_state.pending_definition_card["word"]
         safe_base_word = re.sub(r"[^a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ]", "_", base_word_clean)
         audio_path = os.path.join(UPLOAD_AUDIO_DIR, f"{safe_base_word}_{audio_file.name}")
@@ -177,11 +178,9 @@ if st.session_state.pending_definition_card and st.session_state.image_results:
         st.session_state.pending_definition_card["audio_url"] = audio_path
         st.success(f"Audio added: {audio_file.name}")
 
-    # Context preview + edit inside card preview
     article, ipa = st.session_state.context_creator.get_context(base_word)
-    if st.session_state.pending_definition_card:
-        st.session_state.pending_definition_card["article"] = article
-        st.session_state.pending_definition_card["ipa"] = ipa
+    st.session_state.pending_definition_card["article"] = article
+    st.session_state.pending_definition_card["ipa"] = ipa
 
     st.markdown("### 🧾 Card Preview")
     st.text_input("Word", value=base_word, key="preview_word")
@@ -196,17 +195,13 @@ if st.session_state.pending_definition_card and st.session_state.image_results:
         st.markdown(f"**Audio file:** `{os.path.basename(st.session_state.pending_definition_card['audio_url'])[:20]}...`")
 
     if st.button("➕ Add Card"):
-        # Allow incomplete definition cards (e.g., missing audio or image)
         if 'audio_url' not in st.session_state.pending_definition_card:
             st.session_state.pending_definition_card['audio_url'] = None
         if 'image_url' not in st.session_state.pending_definition_card:
             st.session_state.pending_definition_card['image_url'] = None
 
         st.session_state.cards.append(st.session_state.pending_definition_card)
-        st.session_state.pending_definition_card = None
-        st.session_state.image_results = []
-        st.session_state.selected_word = None
-        st.session_state.selected_image_url = None
+        reset_card_state()
         st.success("Card added!")
         st.rerun()
 
@@ -230,5 +225,13 @@ with st.sidebar:
                 if st.button("🗑️", key=f"delete_{idx}"):
                     st.session_state.cards.pop(idx)
                     st.rerun()
+
+        if st.button("📤 Export cards to Anki deck"):
+            if st.session_state.cards:
+                filename = f"exported_deck_{datetime.now().strftime('%Y%m%d_%H%M%S')}.apkg"
+                export_cards_to_apkg(st.session_state.cards, output_filename=filename)
+                st.success(f"✅ Deck exported as `{filename}`")
+            else:
+                st.warning("No cards to export!")
     else:
         st.info("No cards added yet.")
