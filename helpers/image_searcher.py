@@ -9,7 +9,7 @@ class ImageSearcher:
             'openai:gpt-4o-mini',
             system_prompt="""
         You are an image search assistant.
-        Given an input sentence, generate a concise image search query in English (a word or short sentence) that best captures the core visual concept or essence of the input.
+        Given an input sentence or word, generate a concise image search query in English (a word or short sentence) that best captures the core visual concept or essence of the input.
         - Your output must be a natural-sounding search phrase.
         - It should be no more than 100 characters.
         - Focus on clarity and relevance to ensure useful search results.
@@ -36,7 +36,3 @@ class ImageSearcher:
         search_query = self.query_finetuning_agent.run_sync(query).output
         image_results = self.do_google_image_search(search_query, 5)
         return image_results, search_query
-    
-    def search_images_from_word(self, word):
-        image_results = self.do_google_image_search(word, 5)
-        return image_results, word
