@@ -68,8 +68,6 @@ def init_state():
 
 init_state()
 
-print(st.session_state)
-
 # --- Title ---
 st.title("🧩 Spanish Card Builder")
 
