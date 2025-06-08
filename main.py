@@ -19,10 +19,26 @@ UPLOAD_AUDIO_DIR = "uploaded_audio"
 os.makedirs(UPLOAD_IMG_DIR, exist_ok=True)
 os.makedirs(UPLOAD_AUDIO_DIR, exist_ok=True)
 
+DEFAULT_STATES = {
+    'image_searcher': ImageSearcher(),
+    'context_creator': ContextCreator(),
+    'cards': [],
+    'selected_word': None,
+    'image_results': [],
+    'pending_blank_card': None,
+    'pending_definition_card': None,
+    'definition_card_ready': False,
+    'selected_image_url': None,
+}
+
 # --- Helper Functions ---
 def reset_card_state():
     for key in ["pending_blank_card", "pending_definition_card", "selected_image_url", "selected_word", "image_results"]:
-        st.session_state[key] = None
+        if key in st.session_state:
+            st.session_state[key] = DEFAULT_STATES[key]
+
+def tokenize_spanish(sentence):
+    return re.findall(r"\w+|[¿¡?.,;:!]", sentence, re.UNICODE)
 
 # --- Image Selection ---
 def handle_image_selection():
@@ -46,29 +62,20 @@ def handle_image_selection():
 
 # --- Initialize session state ---
 def init_state():
-    defaults = {
-        'image_searcher': ImageSearcher(),
-        'context_creator': ContextCreator(),
-        'cards': [],
-        'selected_word': None,
-        'image_results': [],
-        'pending_blank_card': None,
-        'pending_definition_card': None,
-        'definition_card_ready': False,
-        'selected_image_url': None,
-    }
-    for k, v in defaults.items():
+    for k, v in DEFAULT_STATES.items():
         if k not in st.session_state:
             st.session_state[k] = v
 
 init_state()
+
+print(st.session_state)
 
 # --- Title ---
 st.title("🧩 Spanish Card Builder")
 
 # --- Step 1: Sentence input ---
 sentence = st.text_input("Enter a Spanish sentence", "")
-words = sentence.strip().split() if sentence else []
+words = tokenize_spanish(sentence) if sentence else []
 
 # --- Step 2: Word buttons ---
 if words:
@@ -77,6 +84,7 @@ if words:
     for i, (col, word) in enumerate(zip(cols, words)):
         with col:
             if st.button(word, key=f"word_{i}"):
+                reset_card_state()
                 st.session_state.selected_word = i
 
 # --- Step 3: Card type selection ---
@@ -93,15 +101,18 @@ if st.session_state.selected_word is not None:
             urls, _ = st.session_state.image_searcher.search_images(sentence)
             st.session_state.image_results = urls
             st.session_state.pending_blank_card = {
-                'type': 'blank', 'sentence': sentence,
-                'front': front, 'back': back,
-                'clue': clue, 'blank_index': selected_index,
+                'type': 'blank', 
+                'sentence': sentence,
+                'front': front, 
+                'back': back,
+                'clue': clue, 
+                'blank_index': selected_index,
                 'image_url': None
             }
             st.session_state.selected_image_url = None
     with col2:
         if st.button("📘 Definition"):
-            base_form = st.session_state.context_creator.get_word_base_form(selected_word)
+            base_form = st.session_state.context_creator.get_word_base_form(selected_word, sentence)
             urls, _ = st.session_state.image_searcher.search_images(base_form)
             st.session_state.image_results = urls
             st.session_state.pending_definition_card = {
@@ -113,7 +124,7 @@ if st.session_state.selected_word is not None:
             st.session_state.definition_card_ready = False
 
 # --- Fill-in-the-blank flow ---
-if st.session_state.pending_blank_card:
+if st.session_state.pending_blank_card is not None:
     handle_image_selection()
     if st.session_state.selected_image_url:
         st.session_state.pending_blank_card['image_url'] = st.session_state.selected_image_url
@@ -128,7 +139,7 @@ if st.session_state.pending_blank_card:
         st.rerun()
 
 # --- Definition flow ---
-if st.session_state.pending_definition_card:
+if st.session_state.pending_definition_card is not None:
     base_word = st.session_state.pending_definition_card['word']
     handle_image_selection()
     if st.session_state.selected_image_url:

@@ -23,9 +23,9 @@ Return only the IPA transcription, no other text.
         self.word_base_form_agent = Agent(
             'openai:gpt-4o-mini',
             system_prompt="""
-You are a word base form assistant. You will be given a Spanish word, and you will return the base form of that word.
-If the word is plural, return the base form of the singular form of the word. If the word can be both masculine and feminine, return both, separated by a slash.
-So, given "compañeros", you will return "compañero / compañera".
+You are a word base form assistant. You will be given a european Spanish word, and you will return the european Spanish base form of that word.
+If the noun is plural and has a common singular form, return the base form of the singular form of the word. If the word can be both masculine and feminine, return both, separated by a slash. If the word is a plural-only noun, which has no common singular form, return the plural form.
+So, given "compañeros", you will return "compañero / compañera". Given "tijeras", you will return "tijeras", since it is a plural-only noun with no common singular form.
 Return only the base form, no other text.
 """
         )
@@ -44,5 +44,5 @@ Return only the article(s), no other text.
     def get_context(self, word):
         return self.article_agent.run_sync(word).output, self.ipa_spelling_agent.run_sync(word).output
 
-    def get_word_base_form(self, word):
-        return self.word_base_form_agent.run_sync(word).output
+    def get_word_base_form(self, word, sentence):
+        return self.word_base_form_agent.run_sync(f"What is the base form of '{word}' in the context of the sentence: {sentence}").output
