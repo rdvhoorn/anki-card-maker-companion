@@ -101,7 +101,7 @@ def export_cards_to_apkg(cards, output_filename='exported_deck.apkg'):
             note = genanki.Note(
                 model=fill_in_blank_model,
                 fields=[
-                    card['sentence'],
+                    card['front'],
                     card.get('clue', ''),
                     img_html,
                     card['back']
