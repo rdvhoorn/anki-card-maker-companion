@@ -16,21 +16,26 @@ class ImageSearcher:
         - Return only the query — no explanations.
         """)
 
-    
     def do_google_image_search(self, query, num=5):
         url = "https://www.googleapis.com/customsearch/v1"
         params = {
             "q": query,
             "key": os.getenv("GOOGLE_API_KEY"),
             "cx": os.getenv("GOOGLE_CSE_ID"),
-            "searchType": "image",  # Omit this line if you want web search
+            "searchType": "image",
             "num": num
         }
         response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
         results = response.json()
 
-        return [item['link'] for item in results.get("items", [])]
+        def is_valid_image(link):
+            # Very basic filtering, extend if needed
+            return all(domain not in link for domain in [
+                "instagram.com", "facebook.com", "lookaside", "media_id"
+            ])
+
+        return [item['link'] for item in results.get("items", []) if is_valid_image(item['link'])]
 
     def search_images(self, query):
         search_query = self.query_finetuning_agent.run_sync(query).output
