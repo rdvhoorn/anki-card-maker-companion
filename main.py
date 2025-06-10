@@ -40,6 +40,22 @@ def reset_card_state():
 def tokenize_spanish(sentence):
     return re.findall(r"\w+|[¿¡?.,;:!]", sentence, re.UNICODE)
 
+def detokenize_spanish(tokens):
+    closers = {'.', ',', ';', ':', '?', '!'}
+    openers = {'¿', '¡'}
+
+    sentence = ''
+    for i, token in enumerate(tokens):
+        if i == 0:
+            sentence += token
+        elif token in closers:
+            sentence += token
+        elif tokens[i-1] in openers:
+            sentence += token
+        else:
+            sentence += ' ' + token
+    return sentence
+
 # --- Image Selection ---
 def handle_image_selection():
     selected_image_url = st.session_state.get("selected_image_url")
@@ -93,7 +109,7 @@ if st.session_state.selected_word is not None:
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🧩 Fill in the blank"):
-            front = ' '.join(['_____' if j == selected_index else w for j, w in enumerate(words)])
+            front = detokenize_spanish(['_____' if j == selected_index else w for j, w in enumerate(words)])
             back = selected_word
             clue = st.session_state.context_creator.create_clue(back)
             urls, _ = st.session_state.image_searcher.search_images(sentence)
