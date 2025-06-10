@@ -34,7 +34,7 @@ Return only the base form, no other text.
             'openai:gpt-4o-mini',
             system_prompt="""
 You are an article assistant. You will be given a Spanish word, and you will return the article that should be used with that word.
-Return only the article(s), no other text.
+Return only the article(s), no other text. If no article is needed, return an empty string.
 """
         )
 

@@ -92,12 +92,13 @@ words = tokenize_spanish(sentence) if sentence else []
 # --- Step 2: Word buttons ---
 if words:
     st.markdown("### ✏️ Choose a word")
-    cols = st.columns(len(words))
-    for i, (col, word) in enumerate(zip(cols, words)):
+    word_buttons = [word for word in words if word not in [',', '.', '?', '!', '¡', '¿']]
+    cols = st.columns(len(word_buttons))
+    for i, (col, word) in enumerate(zip(cols, word_buttons)):
         with col:
             if st.button(word, key=f"word_{i}"):
                 reset_card_state()
-                st.session_state.selected_word = i
+                st.session_state.selected_word = words.index(word)
 
 # --- Step 3: Card type selection ---
 if st.session_state.selected_word is not None:
@@ -111,7 +112,7 @@ if st.session_state.selected_word is not None:
             back = selected_word
             clue = st.session_state.context_creator.create_clue(back)
             urls, _ = st.session_state.image_searcher.search_images(sentence)
-            st.session_state.image_results = urls
+            st.session_state.image_results = urls[:5]
             st.session_state.pending_blank_card = {
                 'type': 'blank', 
                 'sentence': sentence,
@@ -126,7 +127,7 @@ if st.session_state.selected_word is not None:
         if st.button("📘 Definition"):
             base_form = st.session_state.context_creator.get_word_base_form(selected_word, sentence)
             urls, _ = st.session_state.image_searcher.search_images(base_form)
-            st.session_state.image_results = urls
+            st.session_state.image_results = urls[:5]
             st.session_state.pending_definition_card = {
                 'type': 'definition', 'word': base_form, 'original_word': selected_word,
                 'sentence': sentence, 'article': None, 'ipa': None,

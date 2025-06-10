@@ -16,7 +16,7 @@ class ImageSearcher:
         - Return only the query — no explanations.
         """)
 
-    def do_google_image_search(self, query, num=5):
+    def do_google_image_search(self, query, num=10):
         url = "https://www.googleapis.com/customsearch/v1"
         params = {
             "q": query,
@@ -39,5 +39,5 @@ class ImageSearcher:
 
     def search_images(self, query):
         search_query = self.query_finetuning_agent.run_sync(query).output
-        image_results = self.do_google_image_search(search_query, 5)
+        image_results = self.do_google_image_search(search_query)
         return image_results, search_query
