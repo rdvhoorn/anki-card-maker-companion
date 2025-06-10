@@ -15,7 +15,7 @@ def get_models():
         templates=[{
             'name': 'Fill in the blank',
             'qfmt': """<div>Fill in the blank</div><br>
-<div>{{Sentence}} ({{Clue}})</div><br>
+<div>{{Sentence}} {{#Clue}}({{Clue}}){{/Clue}}</div><br>
 <div>{{Image}}</div><br>""",
             'afmt': """<div>{{Filler}}</div><br>""",
         }],

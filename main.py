@@ -4,7 +4,6 @@ import os
 import re
 import random
 from datetime import datetime
-from PIL import Image
 
 from helpers.anki_exporter import export_cards_to_apkg
 from helpers.image_searcher import ImageSearcher
@@ -58,7 +57,6 @@ def detokenize_spanish(tokens):
 
 # --- Image Selection ---
 def handle_image_selection():
-    selected_image_url = st.session_state.get("selected_image_url")
     st.markdown("### 🖼️ Select an image")
     cols = st.columns(len(st.session_state.image_results))
     for i, (col, url) in enumerate(zip(cols, st.session_state.image_results)):
