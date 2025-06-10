@@ -58,18 +58,23 @@ def detokenize_spanish(tokens):
 # --- Image Selection ---
 def handle_image_selection():
     st.markdown("### 🖼️ Select an image")
+
+    # Manual search option
+    manual_term = st.text_input("Optional: Refine image search", key="manual_image_term")
+    if st.button("🔄 Search again with this term"):
+        if manual_term.strip():
+            urls, _ = st.session_state.image_searcher.search_images_without_finetuning(manual_term.strip())
+            st.session_state.image_results = urls[:5]
+        else:
+            st.warning("Please enter a valid search term.")
+
     cols = st.columns(len(st.session_state.image_results))
     for i, (col, url) in enumerate(zip(cols, st.session_state.image_results)):
         with col:
             st.image(url, use_container_width=True)
-            if st.button("Select", key=f"select_image_{i}"):
+            if st.button("Select", key=f"select_image_{i}_{url}"):  # Make key unique
                 st.session_state.selected_image_url = url
-    uploaded = st.file_uploader("Or upload an image", type=["jpg", "jpeg", "png"], key="upload_img")
-    if uploaded:
-        img_path = os.path.join(UPLOAD_IMG_DIR, f"custom_{uploaded.name}")
-        with open(img_path, "wb") as f:
-            f.write(uploaded.getbuffer())
-        st.session_state.selected_image_url = img_path
+                
     if st.session_state.selected_image_url:
         st.markdown("**✅ Selected Image:**")
         st.image(st.session_state.selected_image_url, width=150)

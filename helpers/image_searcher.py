@@ -41,3 +41,8 @@ class ImageSearcher:
         search_query = self.query_finetuning_agent.run_sync(query).output
         image_results = self.do_google_image_search(search_query)
         return image_results, search_query
+    
+    def search_images_without_finetuning(self, search_query):
+        image_results = self.do_google_image_search(search_query)
+        return image_results, search_query
+
